@@ -25,6 +25,21 @@ You will be prompted for Basic Auth credentials:
 
 *(Note: Credentials are managed in `.env` via `KIBANA_USER` and `KIBANA_PASSWORD_HASH`. Use `caddy hash-password` to generate a new hash if needed. Highly recommended to change the password in production)*
 
+### 4. Create Index Pattern
+Before you can view logs, you need to tell Kibana which Elasticsearch indices to explore.
+
+1.  Open the main menu (hamburger icon) and go to **Stack Management** > **Data Views** (or **Index Patterns**).
+2.  Click **Create data view**.
+3.  **Name**: Enter `Logs`.
+4.  **Index pattern**: Enter `logstash-*` (this matches the indices created by Logstash).
+5.  **Timestamp field**: Select `@timestamp`.
+6.  Click **Save data view to Kibana**.
+
+### 5. View Logs
+1.  Open the main menu and go to **Discover**.
+2.  Select your `Logs` data view in the top left.
+3.  You can now see and search your logs (e.g., search for `service.type: "caddy"`).
+
 ## Architecture
 
 ### Log Flow
