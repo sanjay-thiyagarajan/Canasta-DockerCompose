@@ -1,3 +1,14 @@
 {$MW_SITE_FQDN}:{$HTTPS_PORT}
 
 reverse_proxy varnish:80
+
+handle_path /kibana/* {
+    basicauth {
+        {$KIBANA_USER} {$KIBANA_PASSWORD_HASH}
+    }
+    reverse_proxy kibana:5601
+}
+
+log {
+    output file /var/log/caddy/access.log
+}
