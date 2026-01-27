@@ -2,11 +2,11 @@
 
 reverse_proxy varnish:80
 
-handle_path /kibana/* {
+handle_path /opensearch/* {
     basicauth {
-        {$KIBANA_USER} {$KIBANA_PASSWORD_HASH}
+        {$OS_USER} {$OS_PASSWORD_HASH}
     }
-    reverse_proxy kibana:5601
+    reverse_proxy opensearch-dashboards:5601
 }
 
 log {

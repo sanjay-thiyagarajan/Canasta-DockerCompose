@@ -29,7 +29,7 @@ services:
       - "gateway.docker.internal:host-gateway"
     depends_on:
       - db
-      - elasticsearch
+      - opensearch
     environment:
       # Sourced from .env
       - MW_SITE_SERVER=${MW_SITE_SERVER:-https://localhost}
@@ -46,19 +46,20 @@ services:
       - sitemap:/mediawiki/sitemap
       - mediawiki-logs:/var/log/mediawiki
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+  opensearch:
+    image: opensearchproject/opensearch:2.11.1
     restart: unless-stopped
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - plugins.security.disabled=true
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - elasticsearch:/usr/share/elasticsearch/data
+      - opensearch:/usr/share/opensearch/data
 
   caddy:
     image: docker.io/library/caddy:2.8.4-alpine
@@ -69,8 +70,8 @@ services:
     entrypoint: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     environment:
       - MW_SITE_FQDN=${MW_SITE_FQDN:-localhost}
-      - KIBANA_USER=${KIBANA_USER:-admin}
-      - KIBANA_PASSWORD_HASH=${KIBANA_PASSWORD_HASH}
+      - OS_USER=${OS_USER:-admin}
+      - OS_PASSWORD_HASH=${OS_PASSWORD_HASH}
     volumes:
       - caddy-data:/data
       - ./config/Caddyfile:/etc/caddy/Caddyfile
@@ -85,13 +86,11 @@ services:
       - /var/lib/varnish:exec
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.10.2
-    profiles: ["observable"]
-    platform: linux/amd64
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
     user: root
     restart: unless-stopped
     depends_on:
-      - elasticsearch
+      - opensearch
     volumes:
       - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
       - mediawiki-logs:/var/log/mediawiki:ro
@@ -100,24 +99,22 @@ services:
     environment:
       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.10.2
-    profiles: ["observable"]
-    platform: linux/amd64
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.1
     restart: unless-stopped
     ports:
-      - "${KIBANA_PORT:-5601}:5601"
+      - "${OS_PORT:-5601}:5601"
     depends_on:
-      - elasticsearch
+      - opensearch
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_BASEPATH=/kibana
+      - OPENSEARCH_HOSTS=http://opensearch:9200
+      - SERVER_BASEPATH=/opensearch
       - SERVER_REWRITEBASEPATH=false
-      - SERVER_PUBLICBASEURL=http://localhost/kibana
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
 
 volumes:
   mysql-data-volume:
-  elasticsearch:
+  opensearch:
   caddy-data:
   sitemap:
   mediawiki-logs:
